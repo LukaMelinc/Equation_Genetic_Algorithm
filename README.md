@@ -1,0 +1,1 @@
+This is a Python script that generates the equation that calculates the given value using genetic algorithm.
