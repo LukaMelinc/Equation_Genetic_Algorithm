@@ -2,7 +2,14 @@ import random
 import operator
 import numpy as np
 
-# definiramo možne operacije
+"""
+Genetski algoritem je vrsta optimizacijskega algoritma, ki imitira delovanje naravne selekcije in koncepte genetike. Ustvarjajo 
+se generacije mižnih rešitev, da se skozi generacije izberejo najboljši posamezniki generacije in sse repreducirajo, potomci
+pa mutirajo. S ponavljanjem tega se generirajo nove generacije in proces konvergira v optimum. 
+
+"""
+
+# 1) definiramo možne operacije
 operacije = [operator.add, operator.sub, operator.mul, operator.truediv]
 operator_string = ['+', '-', '*', '/']
 
@@ -12,68 +19,116 @@ stevilo_clenov = 5
 max_vrednost = 100
 min_vrednost = 1
 
-# dolocimo hyperparametre
+# dolocimo hyperparametre 
 velikost_populacije = 100
 stevilo_generacij = 1000
 faktor_mutacije = 0.01
+stevilo_starsev = 10 
 
 # postavimo populacijo
-def init_populacije(velikost, stevilo_clenov):  # kot argument prejme velikost populacije in stevilo clenov v enacbi
+def init_populacije(velikost, stevilo_clenov):  # kot argument prejme velikost populacije (št. članov) in stevilo zahtevanih členov v enacbi
+
+    """
+    Inicializra se populacija določene velikosti, vsak član populacije ima določen število členov in operatorjev,
+    vsak član je naključno izbran z vrednostmi znotraj omejitev.
+    Se pokliče samo enkrat, ko se inicializira prvotna populacija, iz katere nato naprej evolvirajo člani.
+    """
+
     populacija = []
-    for i in range(velikost):
-        posamezniki = []    # inicializiramo posameznikov, kolikor je velika populacija
-        for j in range(stevilo_clenov):
+    for i in range(velikost): # inicializiramo posameznikov, kolikor je velika populacija
+        posamezniki = []   
+        for j in range(stevilo_clenov): 
             clen = (random.choice(operacije), random.randint(min_vrednost, max_vrednost))   # Clen v enacbi je nakljucen znotraj meje
             #clen je tuple, ki vsebuje naključen operator in naključno vrednost za operatorjem
             posamezniki.append(clen)
         populacija.append(posamezniki)
-    return populacija   # nakoncu imamo list tuplov, ki držijo operator in vrednost
+    return populacija   # nakoncu imamo list tuplov, ki držijo operator in vrednost, ki jih je, kolikor je velika generacija
 
 def fitness(posameznik):
+    
+    """
+    fitness posazmenega predstavnika nam pove, kako blizu je končni rešitvi, koncu poti. Tisti z boljšim fitnesom so boljši
+    predstavniki v posamezni generaciji, so bližje končnemu cilju in so zato boljši kandidati za osnovo za naslednje generacije.
+    Funckija se izračuna za vsakega predstavnika posamezne generacije. 
+    """
     try:
-        rating = posameznik[0][1]   # posameznik sestavlja operator in vrednost
-        # rating je vrednost prve vrednosti 
+        equation = str(posameznik[0][1])
         for operacija, vrednost in posameznik[1:]:
-            rating = operacija(rating, vrednost)
-        val_fitness = 1 / (abs(ciljna_vrednost - rating) + 1)
+            equation += f" {operator_string[operacije.index(operacija)]} {vrednost}"    # sestavimo string, ki predstavlja enačbo
+        rating = eval(equation) # eval izračuna dejansko vrednost enačbe
+        val_fitness = 1 / (abs(ciljna_vrednost - rating) + 1)  
+        # najpomembnejša vrstica funckije, zračunamo fitness člana generacije kot inverz razlike med vrednostjo
+        # enačbe in ciljno vrednostjo. Če je razlika=0, je fitness=1, kar pomeni, da smo našli naš ciljni
+        # člen/enačbo/predstavnika in nehamo izvajati genetski algoritem
         return val_fitness
     except ZeroDivisionError:
-        return 0    # če pride do deljenja z 0, je fitness posameznika = 0
+        return 0
     
-def izbor_starsev(populacija, fitnessi):
-    celotni_fitness = sum(fitnessi) # skupni fitnes celotne populacije, da normiramo vrednosti
-    seznam = [f / celotni_fitness for f in fitnessi]
-    # Za vsakega posameznika zračunamo verjetnost, da ga zberemo: njegov fitness / skupni fitness
-    starsa = np.random.choice(len(populacija), size=velikost_populacije, p=seznam)
-    return [populacija[i] for i in starsa]
 
-def mesanje(stars1, stars2):
-    tocka_mesanja = random.randint(1, stevilo_clenov - 1)
-    otrok1 = stars1[:tocka_mesanja] + stars2[tocka_mesanja:]
-    otrok2 = stars2[:tocka_mesanja] + stars1[tocka_mesanja:]
-    return otrok1, otrok2
+
+
+def izbor_starsev(populacija, fitnessi, stevilo_starsev):
+
+    """
+    ta funkcija se izvaja po izračunu fitnessev članov generacije, da se izbere podlago za sledečo generacijo. 
+    Pomembno je, koliko staršev se vzame za naslednjo generacijo, z večjim številom staršev se sicer vključi starše s slabšim 
+    fitnessom, kar upočasni konvergenco, vendar pa je naslednja generacija bolj raznolika. Z manjšim številom staršev
+    se izbere boljšo osnovo za naslednjo generacijo
+    """
+    celotni_fitness = sum(fitnessi) 
+    seznam = [f / celotni_fitness for f in fitnessi]    # znormiramo posamezne fitnesse
+    starsi = np.random.choice(len(populacija), size=stevilo_starsev, p=seznam, replace=False)
+    # izberemo poljubno število staršev, z večjo verjetnostjo tiste z višjim fitnessem
+    return [populacija[i] for i in starsi]
+
+
+def mesanje(starsi):
+
+    """
+    izvaja ti. crossover, kombinira "gene" staršev za generiranje nove generacije 
+
+    """
+    #tocka_mesanja = random.randint(1, stevilo_clenov - 1)
+    otroci = []
+    for i in range(len(starsi)):
+        otrok = []
+        for j in range(stevilo_clenov):
+            vir = random.choice(starsi) # izberemo poljubnega staša
+            otrok.append(vir[j])    # dodamo izbrani "gen" iz izbranega starša v otroka
+        otroci.append(otrok)
+    return otroci
 
 def mutiranje(posameznik):
+
+    """
+    določamo, kako bodo mutirali pripadniki generacije - posnemamo obnašanje narave
+    Z večjim faktorjem mutacije bomo dobili bolj raznoliko generacijo
+    
+    """
     for i in range(len(posameznik)):
         if random.random() < faktor_mutacije:
+            # preveri, če se bo mutacija zgodila s pomočjo naključnega števila med 0 in 1
+            # če je random vrednost večja od praga, ki je faktor_mutacije, se mutacija izvede
             posameznik[i] = (random.choice(operacije), random.randint(min_vrednost, max_vrednost))
     return posameznik
 
 def GA():
-    populacija = init_populacije(velikost_populacije, stevilo_clenov)
+
+    """
+    izvaja celoten algoritem, kliče posamezne funkcije
+    """
+    populacija = init_populacije(velikost_populacije, stevilo_clenov)   # postavimo prvo generacijo
     for generacijo in range(stevilo_generacij):
-        fitnesi = [fitness(posameznik) for posameznik in populacija]
+        fitnesi = [fitness(posameznik) for posameznik in populacija] # izračunamo fitnesse za posamezno generacijo 
         if max(fitnesi) == 1:
             break
-        starsi = izbor_starsev(populacija, fitnesi)
+        starsi = izbor_starsev(populacija, fitnesi, stevilo_starsev)    # izberemo število staršev za naslednjo generacijo
         naslednja_populacija = []
-        for i in range(0, velikost_populacije, 2):
-            stars1 = starsi[i]
-            stars2 = starsi[i+1]
-            otrok1, otrok2 = mesanje(stars1, stars2)
-            naslednja_populacija.append(mutiranje(otrok1))
-            naslednja_populacija.append(mutiranje(otrok2))
-        populacija = naslednja_populacija
+        for i in range(0, velikost_populacije, stevilo_starsev):
+            otroci = mesanje(starsi)    # mesanje med starsi in generiranje novih torok
+            for otrok in otroci:
+                naslednja_populacija.append(mutiranje(otrok))   # zmutiramo nove otroke
+        populacija = naslednja_populacija[:velikost_populacije]  
     najboljši_posameznik = populacija[np.argmax(fitnesi)]
     return najboljši_posameznik, generacijo
 
@@ -85,3 +140,9 @@ rezultat = fitness(najboljši_posameznik)
 print(f"Končna enačba: {enačba}")
 print(f"Število iteracij: {generacija}")
 print(f"Rezultat: {ciljna_vrednost / rezultat}")
+
+"""
+Če je kakšen kontekst čudno napisan ali je kaj nejasnega, moje razumevanje genteskih algoritmov prihaja iz uporabe 
+genetskih algoritmov za optimizacijo agentov v igrah kot je recimo Trackmania, kjer se genetski algoritmi uporabljajo
+za optimizacijo poti vozil: https://www.youtube.com/watch?v=a8Bo2DHrrow
+"""
