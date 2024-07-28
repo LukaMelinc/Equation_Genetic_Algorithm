@@ -1,6 +1,7 @@
 import random
 import operator
 import numpy as np
+import matplotlib.pyplot as plt
 
 """
 Genetski algoritem je vrsta optimizacijskega algoritma, ki imitira delovanje naravne selekcije in koncepte genetike. Ustvarjajo 
@@ -112,14 +113,28 @@ def mutiranje(posameznik):
             posameznik[i] = (random.choice(operacije), random.randint(min_vrednost, max_vrednost))
     return posameznik
 
-def GA():
+def plot_fitness_history(fitness_history):
 
+    """
+    funckija za izpis cenilke skozi generacije
+    """
+    plt.figure(figsize=(10, 6))
+    plt.plot(fitness_history, marker='o', linestyle='-', color='b')
+    plt.title('Najvišji fitness skozi generacije')
+    plt.xlabel('Generacija')
+    plt.ylabel('Najvišji fitness')
+    plt.grid(True)
+    plt.show()
+
+def GA():
     """
     izvaja celoten algoritem, kliče posamezne funkcije
     """
     populacija = init_populacije(velikost_populacije, stevilo_clenov)   # postavimo prvo generacijo
+    fitness_history = []
     for generacijo in range(stevilo_generacij):
         fitnesi = [fitness(posameznik) for posameznik in populacija] # izračunamo fitnesse za posamezno generacijo 
+        fitness_history.append(max(fitnesi))
         if max(fitnesi) == 1:
             break
         starsi = izbor_starsev(populacija, fitnesi, stevilo_starsev)    # izberemo število staršev za naslednjo generacijo
@@ -130,9 +145,9 @@ def GA():
                 naslednja_populacija.append(mutiranje(otrok))   # zmutiramo nove otroke
         populacija = naslednja_populacija[:velikost_populacije]  
     najboljši_posameznik = populacija[np.argmax(fitnesi)]
-    return najboljši_posameznik, generacijo
+    return najboljši_posameznik, generacijo, fitness_history
 
-najboljši_posameznik, generacija = GA()
+najboljši_posameznik, generacija, fitness_history = GA()
 enačba = f"{najboljši_posameznik[0][1]}"
 for operacija, vrednost in najboljši_posameznik[1:]:
     enačba += f" {operator_string[operacije.index(operacija)]} {vrednost}"
@@ -140,6 +155,9 @@ rezultat = fitness(najboljši_posameznik)
 print(f"Končna enačba: {enačba}")
 print(f"Število iteracij: {generacija}")
 print(f"Rezultat: {ciljna_vrednost / rezultat}")
+
+# Prikaži graf najvišjega fitnessa skozi generacije
+plot_fitness_history(fitness_history)
 
 """
 Če je kakšen kontekst čudno napisan ali je kaj nejasnega, moje razumevanje genteskih algoritmov prihaja iz uporabe 
