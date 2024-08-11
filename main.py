@@ -152,6 +152,7 @@ enačba = f"{najboljši_posameznik[0][1]}"
 for operacija, vrednost in najboljši_posameznik[1:]:
     enačba += f" {operator_string[operacije.index(operacija)]} {vrednost}"
 rezultat = fitness(najboljši_posameznik)
+
 print(f"Končna enačba: {enačba}")
 print(f"Število iteracij: {generacija}")
 print(f"Rezultat: {ciljna_vrednost / rezultat}")
