@@ -36,9 +36,9 @@ def init_populacije(velikost, stevilo_clenov):  # kot argument prejme velikost p
     """
 
     populacija = []
-    for i in range(velikost): # inicializiramo posameznikov, kolikor je velika populacija
+    for _ in range(velikost): # inicializiramo posameznikov, kolikor je velika populacija
         posamezniki = []   
-        for j in range(stevilo_clenov): 
+        for _ in range(stevilo_clenov): 
             clen = (random.choice(operacije), random.randint(min_vrednost, max_vrednost))   # Clen v enacbi je nakljucen znotraj meje
             #clen je tuple, ki vsebuje naključen operator in naključno vrednost za operatorjem
             posamezniki.append(clen)
@@ -48,9 +48,9 @@ def init_populacije(velikost, stevilo_clenov):  # kot argument prejme velikost p
 def fitness(posameznik):
     
     """
-    fitness posazmenega predstavnika nam pove, kako blizu je končni rešitvi, koncu poti. Tisti z boljšim fitnesom so boljši
+    fitness posazmenega predstavnika nam pove, kako blizu je končni rešitvi, pravilni vrednosti. Tisti z boljšim fitnesom so boljši
     predstavniki v posamezni generaciji, so bližje končnemu cilju in so zato boljši kandidati za osnovo za naslednje generacije.
-    Funckija se izračuna za vsakega predstavnika posamezne generacije. 
+    Fitnes vrednost se izračuna za vsakega predstavnika posamezne generacije. 
     """
     try:
         equation = str(posameznik[0][1])
@@ -58,7 +58,7 @@ def fitness(posameznik):
             equation += f" {operator_string[operacije.index(operacija)]} {vrednost}"    # sestavimo string, ki predstavlja enačbo
         rating = eval(equation) # eval izračuna dejansko vrednost enačbe
         val_fitness = 1 / (abs(ciljna_vrednost - rating) + 1)  
-        # najpomembnejša vrstica funckije, zračunamo fitness člana generacije kot inverz razlike med vrednostjo
+        # zračunamo fitness člana generacije kot inverz razlike med vrednostjo
         # enačbe in ciljno vrednostjo. Če je razlika=0, je fitness=1, kar pomeni, da smo našli naš ciljni
         # člen/enačbo/predstavnika in nehamo izvajati genetski algoritem
         return val_fitness
@@ -159,9 +159,3 @@ print(f"Rezultat: {ciljna_vrednost / rezultat}")
 
 # Prikaži graf najvišjega fitnessa skozi generacije
 plot_fitness_history(fitness_history)
-
-"""
-Če je kakšen kontekst čudno napisan ali je kaj nejasnega, moje razumevanje genteskih algoritmov prihaja iz uporabe 
-genetskih algoritmov za optimizacijo agentov v igrah kot je recimo Trackmania, kjer se genetski algoritmi uporabljajo
-za optimizacijo poti vozil: https://www.youtube.com/watch?v=a8Bo2DHrrow
-"""
