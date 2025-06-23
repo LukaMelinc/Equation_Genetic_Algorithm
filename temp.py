@@ -1,61 +1,26 @@
-% Parametri TS modela
-R = 10; % Število podfunkcij
-C = rand(R, 2);  % Centri funkcij
-O = rand(R, 1);  % Širine podfunkcij
-W = rand(R, 4);  % Uteži linearnih funkcij
-b = rand(R, 1);  % Biasi linearnih funkcij
-learning_rate = 0.001; % Learning rate
-epochs = 200; % Število učnih epoh
+function [A_state, B_state, C_state, R_state] = Convert(centers, spreads, weights, offsets, input)
 
-% Membership funckija pove, koliko posamezno pravilo doprinese k končnemu
-% izhodu funkcije
+    % Prevajanje TS modela v prostor stanj
 
-% trening TS modela
-[C, O, W, b] = TS_train(C, O, W, b, X_shifted, Y_shifted, learning_rate, epochs);
+    numRules = size(centers, 1);  % Število funkcij
+    [A_state, B_state, C_state, R_state] = deal(zeros(2, 2), zeros(2, 1), zeros(1, 2), zeros(2, 1));
 
+    membershipValues = exp(-0.5 * sum((input' - centers).^2 ./ (spreads.^2), 2));  % Gaussian membership
+    membershipValues = membershipValues / sum(membershipValues);  % Normalizcija membershipov
 
-% Napovedan izhod modela
-%Y_predicted = TS_eval(C, O, W, b, X_test');
+    % Sestavitev matrik stanja
+    for ruleIndex = 1:numRules
+        A_rule = [0, -weights(ruleIndex, 4); 1, -weights(ruleIndex, 3)];  % 2x2, uteži po diagonali -> Dinamika sistema
+        B_rule = [weights(ruleIndex, 2); weights(ruleIndex, 1)]; % 2x1 -> vpliv vhoda na stanje
+        C_rule = [0, 1];
+        R_rule = [0; offsets(ruleIndex)];  % Deviacija dinamike za funkcijo
 
-Y_simulated = zeros(size(Y_test));
-for i = 1:length(Y_test)
-    if i == 1
-        y_prev1 = y_test(i+1); % y_test(2)
-        y_prev2 = y_test(i);   % y_test(1)
-    elseif i == 2
-        y_prev1 = Y_simulated(i-1); % Y_simulated(1) which predicts y_test(3)
-        y_prev2 = y_test(i);        % y_test(2)
-    else
-        y_prev1 = Y_simulated(i-1);
-        y_prev2 = Y_simulated(i-2);
+        % Posodobitev matrik prostora stanj za posamezno pravilo
+        A_state = A_state + membershipValues(ruleIndex) * A_rule;
+        B_state = B_state + membershipValues(ruleIndex) * B_rule;
+        C_state = C_state + membershipValues(ruleIndex) * C_rule;
+        R_state = R_state + membershipValues(ruleIndex) * R_rule;
     end
-
-    % Construct the input vector
-    x_current = [u_test(i+1), u_test(i), -y_prev1, -y_prev2];
-
-    % Predict the current output
-    y_predicted_current = TS_eval(C, O, W, b, x_current');
-
-    % Store the predicted output
-    Y_simulated(i) = y_predicted_current;
+    input=0;
+    
 end
-
-
-% MAE TS modela
-mae_ts = mean(abs(Y_test - Y_simulated'));
-fprintf('Takagi-Sugeno Model MAE: %.4f\n', mae_ts);
-
-
-% Primejrava dejanskega in napovedanega izhoda
-figure('Position', [100, 100, 1200, 800]);
-
-plot(Y_test);
-hold on;
-plot(Y_simulated);
-
-title('Primerjava napovedanega in dejanskega izhoda (TS)');
-xlabel('Sample');
-ylabel('Vrednotst izhoda [V]');
-legend('Dejanski izhod', 'Napovedan izhod modela');
-grid on;
-hold off;
