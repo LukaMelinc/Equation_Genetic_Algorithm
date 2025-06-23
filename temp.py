@@ -1,5 +1,3 @@
-clear all;
-
 % Inicializacija parametrov
 % Definicija parametrov
 T = 0.01; % Časovni korak, sampling
@@ -167,6 +165,10 @@ legend('Dejanski odziv', 'Napovedan odziv');
 grid on;
 
 
+save('APRBS_signal.mat', 'X_shifted', "Y_shifted", "Y_test", "y_test", "u_test");
+
+
+load("APRBS_signal.mat")
 
 TS
 % Parametri TS modela
@@ -182,9 +184,14 @@ epochs = 100; % Število učnih epoh
 % izhodu funkcije
 
 % trening TS modela
-%[C, O, W, b] = TS_train(C, O, W, b, X_shifted, Y_shifted, learning_rate, epochs);
+[C, O, W, b] = TS_train(C, O, W, b, X_shifted, Y_shifted, learning_rate, epochs);
 
+
+% SIMULATION MODE
 Y_simulated = zeros(size(Y_test));
+
+
+
 for i = 1:length(Y_test)
     if i == 1
         y_prev1 = y_test(i+1); % y_test(2)
@@ -207,26 +214,19 @@ for i = 1:length(Y_test)
     Y_simulated(i) = y_predicted_current;
 end
 
-
-% Napovedan izhod modela
-%Y_predicted = TS_eval(C, O, W, b, X_test');
-
-% MAE TS modela
+% Calculate MAE for simulation
 mae_ts_sim = mean(abs(Y_test - Y_simulated'));
-fprintf('Takagi-Sugeno Model MAE: %.4f\n', mae_ts_sim);
+fprintf('Takagi-Sugeno Model MAE (Simulation): %.4f\n', mae_ts_sim);
 
-
-% Primejrava dejanskega in napovedanega izhoda
+% Plot simulation results
 figure('Position', [100, 100, 1200, 800]);
-
 plot(Y_test);
 hold on;
 plot(Y_simulated);
-
-title('Primerjava napovedanega in dejanskega izhoda (TS)');
+title('Primerjava simuliranega in dejanskega izhoda (TS)');
 xlabel('Sample');
-ylabel('Vrednotst izhoda [V]');
-legend('Dejanski izhod', 'Napovedan izhod modela');
+ylabel('Vrednost izhoda [V]');
+legend('Dejanski izhod', 'Simulirani izhod modela');
 grid on;
 hold off;
 
@@ -294,10 +294,7 @@ for k = 3:N_sim
     y_ref(k) = C_ref * x_ref;  % Izhod referenčnega sistema -> C matrika * referenčni vhod
     e = referencniSignal(k) - y_process(k-1);  % Napaka glede na proces, na zaćetku je y_process = 0
 
-    % Izračunovanje matrik sistema na podlagi TS modela za trenutno stanje
-    % modela
-    % Posodobimo, ker je sistem nelinearen in časovno spremenljiv ->
-    % adaptivno posodabljamo matrike na podalgi stanja procesa
+    % Izračunovanje matrik sistema na podlagi TS modela za trenutno stanje modela
     [A_m, B_m, C_m, R_m] = Convert(C, O, W, b, [-y_process(k-1); -y_process(k-2)]);
 
     % Prediktivni regulator -> regulirni zakon iz worda
@@ -486,6 +483,5 @@ function [A_state, B_state, C_state, R_state] = Convert(centers, spreads, weight
     input=0;
     
 end
-
 
 
