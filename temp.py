@@ -293,9 +293,12 @@ y_process = zeros(1, N_sim);        % proces
 y_ref = zeros(1, N_sim);            % referencni signal
 
 
-% Integration component ADD
+% Integration and derivative component ADD
 xi = 0;
 Ki = 0.001;
+Kd = 10;
+
+previous_error = 0;
 
 % Koeficienti za funkcijski regulator
 for k = 3:N_sim
@@ -305,6 +308,13 @@ for k = 3:N_sim
 
 
     xi = xi + e;
+
+    % Calculate derivative term
+    derivative_term = Kd * (e - previous_error);
+
+    % Update previous error
+    previous_error = e;
+
 
     % Izračunovanje matrik sistema na podlagi TS modela za trenutno stanje modela
     [A_m, B_m, C_m, R_m] = Convert(C, O, W, b, [-y_process(k-1); -y_process(k-2)]);
@@ -320,7 +330,7 @@ for k = 3:N_sim
     y_model(k) = C_m * x_model;
 
      % Krmilni signal - regulirni zakon
-    u(k) = G * e + xi * Ki + pinv(G0) * y_model(k-1) - pinv(G0) * C_m * (A_m^H) * x_model - pinv(B_m) * R_m;
+    u(k) = G * e + xi * Ki + derivative_term + pinv(G0) * y_model(k-1) - pinv(G0) * C_m * (A_m^H) * x_model - pinv(B_m) * R_m;
 
 
     % Procesni model (Helicrane)
