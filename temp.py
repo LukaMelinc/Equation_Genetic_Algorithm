@@ -232,7 +232,11 @@ hold off;
 
 
 Naloga 6
-
+N = 4000;        % ŠT. aprbs samplov
+%amplitude = 2;   % amplituda napetosti
+Ts = 0.01;       % Sampling 
+Th = 0.15;       % Hrizont spreminjanja aprbs signala
+padding = 200;   % paddanje signala pred/po signalu
 % Referenčni sistem (1. reda)
 casovniKorak = 0.01;    % sampling
 
@@ -253,7 +257,7 @@ C_ref = sys_ref.C;
 cas = 0:casovniKorak:99.99;
 steviloTock = length(cas);   % Število korakov v signalu
 referencniSignal = zeros(1, steviloTock);
-amplitude = [18, 55, 34, 86, 25, 66, 77, 79, 33, 11];  % Zaporedje amplitud signala - mau random
+amplitude = [11, 33, 55, 77, 99, 77, 55, 33, 11, 1];  % Zaporedje amplitud signala - mau random
 casovniInterval = steviloTock / length(amplitude);   % Interval za vsako amplitudo
 
 for i = 1:length(amplitude)
